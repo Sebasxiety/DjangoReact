@@ -36,11 +36,45 @@ class ProveedorSerializer(serializers.ModelSerializer):
 class DetalleVentaSerializer(serializers.ModelSerializer):
     class Meta:
         model = DetalleVenta
-        fields = '__all__'
+        fields = ('producto','cantidad')
+        read_only_fields = ('precio_unitario', 'subtotal')
 
 class VentaSerializer(serializers.ModelSerializer):
-    detalles = DetalleVentaSerializer(many=True, read_only=True)
+    detalles = DetalleVentaSerializer(many=True)
 
     class Meta:
         model = Venta
-        fields = '__all__'
+        fields = ('id', 'fecha', 'total', 'cliente', 'vendedor', 'detalles')
+        read_only_fields = ('total',)
+
+    def create(self, validated_data):
+        detalles_data = validated_data.pop('detalles')
+        
+        # El total se ignora del request, se calculará
+        validated_data.pop('total', None)
+        
+        venta = Venta.objects.create(total=0, **validated_data)
+        total_venta = 0
+
+        for detalle_data in detalles_data:
+            producto = detalle_data['producto']
+            cantidad = detalle_data['cantidad']
+            
+            # Usar el precio de la base de datos
+            precio_unitario = producto.precio
+            subtotal = cantidad * precio_unitario
+            total_venta += subtotal
+
+            DetalleVenta.objects.create(
+                venta=venta,
+                producto=producto,
+                cantidad=cantidad,
+                precio_unitario=precio_unitario,
+                subtotal=subtotal
+            )
+
+        # Actualizar el total de la venta
+        venta.total = total_venta
+        venta.save()
+
+        return venta

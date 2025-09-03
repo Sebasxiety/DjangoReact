@@ -30,33 +30,43 @@ function SaleModal({ open, onClose, onSave, sale }) {
   });
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Effect to fetch data and populate form
   useEffect(() => {
     if (open) {
       setLoading(true);
-      Promise.all([
+      const dataPromise = Promise.all([
         apiClient.get('/clientes/'),
         apiClient.get('/productos/')
-      ]).then(([clientesRes, productosRes]) => {
+      ]);
+
+      dataPromise.then(([clientesRes, productosRes]) => {
         setClientes(clientesRes.data);
         setProductos(productosRes.data);
 
-        // Now that data is loaded, populate the form
         if (sale && sale.id) {
-          setFormData({
-            cliente: sale.cliente.id || sale.cliente,
-            vendedor: sale.vendedor.id || sale.vendedor,
-            total: parseFloat(sale.total) || 0,
-            detalles: sale.detalles ? sale.detalles.map(detail => ({
-              ...detail,
-              producto: detail.producto.id || detail.producto,
-              precio_unitario: parseFloat(detail.precio_unitario),
-              subtotal: parseFloat(detail.subtotal),
-            })) : [],
+          // Editing an existing sale, fetch its full details
+          apiClient.get(`/ventas/${sale.id}/`).then(saleRes => {
+            const detailedSale = saleRes.data;
+            setFormData({
+              cliente: detailedSale.cliente.id || detailedSale.cliente,
+              vendedor: detailedSale.vendedor.id || detailedSale.vendedor,
+              total: parseFloat(detailedSale.total) || 0,
+              detalles: detailedSale.detalles ? detailedSale.detalles.map(detail => ({
+                ...detail,
+                producto: detail.producto.id || detail.producto,
+                precio_unitario: parseFloat(detail.precio_unitario),
+                subtotal: parseFloat(detail.subtotal),
+              })) : [],
+            });
+            setLoading(false);
+          }).catch(error => {
+            console.error(`Error fetching details for sale ${sale.id}:`, error);
+            setLoading(false);
           });
         } else {
+          // Creating a new sale
           const userId = getUserIdFromToken();
           setFormData({
             cliente: '',
@@ -64,14 +74,14 @@ function SaleModal({ open, onClose, onSave, sale }) {
             total: 0,
             detalles: [],
           });
+          setLoading(false);
         }
-        setLoading(false);
       }).catch(error => {
         console.error("Error fetching data for sale modal:", error);
         setLoading(false);
       });
     } else {
-      // Reset form when modal is closed
+      // Reset form state when modal is closed
       setFormData({ cliente: '', vendedor: '', total: 0, detalles: [] });
       setClientes([]);
       setProductos([]);
@@ -80,9 +90,12 @@ function SaleModal({ open, onClose, onSave, sale }) {
 
   // Calculate total whenever details change
   useEffect(() => {
+    // Avoid recalculating total when form is first populated
+    if (loading) return;
     const newTotal = formData.detalles.reduce((sum, detail) => sum + (detail.subtotal || 0), 0);
     setFormData(prev => ({ ...prev, total: newTotal }));
-  }, [formData.detalles]);
+  }, [formData.detalles, loading]);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -189,7 +202,7 @@ function SaleModal({ open, onClose, onSave, sale }) {
               <Typography variant="h6" sx={{ mb: 2 }}>Detalles de la Venta</Typography>
               {formData.detalles.map((detail, index) => (
                 <Grid container spacing={2} key={index} alignItems="center" sx={{ mb: 2 }}>
-                  <Grid item xs={12} sm={5}>
+                  <Grid xs={12} sm={5}>
                     <FormControl fullWidth size="small">
                       <InputLabel id={`producto-label-${index}`}>Producto</InputLabel>
                       <Select
@@ -208,7 +221,7 @@ function SaleModal({ open, onClose, onSave, sale }) {
                       </Select>
                     </FormControl>
                   </Grid>
-                  <Grid item xs={4} sm={1.5}>
+                  <Grid xs={4} sm={1.5}>
                     <TextField
                       size="small"
                       label="Cant."
@@ -219,7 +232,7 @@ function SaleModal({ open, onClose, onSave, sale }) {
                       fullWidth
                     />
                   </Grid>
-                  <Grid item xs={4} sm={1.5}>
+                  <Grid xs={4} sm={1.5}>
                     <TextField
                       size="small"
                       label="Precio"
@@ -229,7 +242,7 @@ function SaleModal({ open, onClose, onSave, sale }) {
                       fullWidth
                     />
                   </Grid>
-                  <Grid item xs={4} sm={2}>
+                  <Grid xs={4} sm={2}>
                     <TextField
                       size="small"
                       label="Subtotal"
@@ -239,7 +252,7 @@ function SaleModal({ open, onClose, onSave, sale }) {
                       fullWidth
                     />
                   </Grid>
-                  <Grid item xs={12} sm={1}>
+                  <Grid xs={12} sm={1}>
                     <IconButton onClick={() => handleRemoveDetail(index)} color="error">
                       <RemoveIcon />
                     </IconButton>
