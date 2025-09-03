@@ -107,6 +107,7 @@ function ProductList() {
               <TableCell>Stock</TableCell>
               <TableCell>Código de Barras</TableCell>
               <TableCell>Categoría</TableCell>
+              <TableCell>Proveedor</TableCell>
               <TableCell align="right">Acciones</TableCell>
             </TableRow>
           </TableHead>
@@ -120,6 +121,7 @@ function ProductList() {
                   <TableCell>{producto.stock}</TableCell>
                   <TableCell>{producto.codigo_barra}</TableCell>
                   <TableCell>{producto.categoria_nombre || producto.categoria}</TableCell>
+                  <TableCell>{producto.proveedor_nombre || producto.proveedor}</TableCell>
                   <TableCell align="right">
                     <IconButton size="small" onClick={() => handleEdit(producto)}>
                       <EditIcon />
@@ -132,7 +134,7 @@ function ProductList() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={8} align="center">
                   No hay productos para mostrar.
                 </TableCell>
               </TableRow>

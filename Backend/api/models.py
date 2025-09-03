@@ -30,6 +30,7 @@ class Producto(models.Model):
     stock = models.PositiveIntegerField(default=0, help_text="Cantidad en inventario")
     codigo_barra = models.CharField(max_length=100, unique=True, help_text="Código de barras del producto")
     categoria = models.ForeignKey(Categoria, related_name='productos', on_delete=models.CASCADE, help_text="Categoría a la que pertenece el producto")
+    proveedor = models.ForeignKey('Proveedor', on_delete=models.SET_NULL, null=True, blank=True, help_text="Proveedor del producto")
 
     def __str__(self):
         return self.nombre

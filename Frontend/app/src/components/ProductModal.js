@@ -13,17 +13,27 @@ function ProductModal({ open, onClose, onSave, product }) {
     stock: '',
     codigo_barra: '',
     categoria: '',
+    proveedor: '',
   });
   const [categorias, setCategorias] = useState([]);
+  const [proveedores, setProveedores] = useState([]);
 
   useEffect(() => {
-    if (open) { // Fetch categories only when modal is open
+    if (open) {
       apiClient.get('/categorias/')
         .then(response => {
           setCategorias(response.data);
         })
         .catch(error => {
           console.error('Error fetching categories: ', error);
+        });
+      
+      apiClient.get('/proveedores/')
+        .then(response => {
+          setProveedores(response.data);
+        })
+        .catch(error => {
+          console.error('Error fetching suppliers: ', error);
         });
     }
   }, [open]);
@@ -37,6 +47,7 @@ function ProductModal({ open, onClose, onSave, product }) {
         stock: product.stock || '',
         codigo_barra: product.codigo_barra || '',
         categoria: product.categoria || '',
+        proveedor: product.proveedor || '',
       });
     } else {
       setFormData({
@@ -46,6 +57,7 @@ function ProductModal({ open, onClose, onSave, product }) {
         stock: '',
         codigo_barra: '',
         categoria: '',
+        proveedor: '',
       });
     }
   }, [product, open]);
@@ -148,6 +160,23 @@ function ProductModal({ open, onClose, onSave, product }) {
               {categorias.map((cat) => (
                 <MenuItem key={cat.id} value={cat.id}>
                   {cat.nombre}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth margin="dense">
+            <InputLabel id="proveedor-label">Proveedor</InputLabel>
+            <Select
+              labelId="proveedor-label"
+              id="proveedor"
+              name="proveedor"
+              value={formData.proveedor}
+              label="Proveedor"
+              onChange={handleChange}
+            >
+              {proveedores.map((prov) => (
+                <MenuItem key={prov.id} value={prov.id}>
+                  {prov.nombre}
                 </MenuItem>
               ))}
             </Select>
